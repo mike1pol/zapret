@@ -66,36 +66,34 @@ func main() {
 	if *verbose {
 		log.Printf("Routes count ips: %d", len(routes))
 	}
-	for i, ip := range ips {
-		if i == 1 {
-			in_nat, _ := in_array(ip, nat)
-			in_mangle, _ := in_array(ip, mangle)
-			in_routes, _ := in_array(ip, routes)
-			if *verbose {
-				log.Printf("ip: %s, in-nat: %t, in-mangle: %t, in-routes: %t", ip, in_nat, in_mangle, in_routes)
+	for _, ip := range ips {
+		in_nat, _ := in_array(ip, nat)
+		in_mangle, _ := in_array(ip, mangle)
+		in_routes, _ := in_array(ip, routes)
+		if *verbose {
+			log.Printf("ip: %s, in-nat: %t, in-mangle: %t, in-routes: %t", ip, in_nat, in_mangle, in_routes)
+		}
+		if *apply_rules {
+			log.Println("trying to apply rules")
+			if in_nat == false {
+				log.Printf("applying nat rules for ip: %s", ip)
+				res := addIp(c, ip, Nat)
+				if *verbose {
+					log.Println(res)
+				}
 			}
-			if *apply_rules {
-				log.Println("trying to apply rules")
-				if in_nat == false {
-					log.Printf("applying nat rules for ip: %s", ip)
-					res := addIp(c, ip, Nat)
-					if *verbose {
-						log.Println(res)
-					}
+			if in_mangle == false {
+				log.Printf("applying mangle rules for ip: %s", ip)
+				res := addIp(c, ip, Mangle)
+				if *verbose {
+					log.Println(res)
 				}
-				if in_mangle == false {
-					log.Printf("applying mangle rules for ip: %s", ip)
-					res := addIp(c, ip, Mangle)
-					if *verbose {
-						log.Println(res)
-					}
-				}
-				if in_routes == false {
-					log.Printf("applying route rules for ip: %s", ip)
-					res := addIp(c, ip, Routes)
-					if *verbose {
-						log.Println(res)
-					}
+			}
+			if in_routes == false {
+				log.Printf("applying route rules for ip: %s", ip)
+				res := addIp(c, ip, Routes)
+				if *verbose {
+					log.Println(res)
 				}
 			}
 		}
