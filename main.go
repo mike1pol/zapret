@@ -3,28 +3,22 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"log"
-	"net"
-	"net/http"
 	"reflect"
-	"strings"
 	"time"
 
-	"encoding/csv"
 	"gopkg.in/routeros.v2"
 )
 
 var (
-	address       = flag.String("address", "192.168.88.1:8728", "RouterOS address and port")
-	username      = flag.String("username", "admin", "User name")
-	password      = flag.String("password", "admin", "Password")
-	out_interface = flag.String("interface", "vpn", "VPN interface")
-	verbose       = flag.Bool("verbose", false, "Verbose mode")
+	address       = flag.String("a", "192.168.88.1:8728", "RouterOS address and port")
+	username      = flag.String("u", "admin", "User name")
+	password      = flag.String("p", "admin", "Password")
+	out_interface = flag.String("i", "", "VPN interface")
+	verbose       = flag.Bool("v", false, "Verbose mode")
 	rules         = flag.Int("rules", 1, "Rules for: 0 - all, 1 - networks, 2 - IP")
 	apply_rules   = flag.Bool("apply", false, "Apply rules to router: true - yes, false - no")
-	timeout       = flag.Duration("timeout", 4*time.Second, "Connection timeout")
+	timeout       = flag.Duration("t", 4*time.Second, "Connection timeout")
 )
 
 type RType int
@@ -203,49 +197,6 @@ func listen(c *routeros.Client, command string) (l *routeros.ListenReply) {
 	}()
 
 	return l
-}
-
-func readIps() (ips []string) {
-	resp, err := http.Get("https://raw.githubusercontent.com/zapret-info/z-i/master/dump.csv")
-	check(err)
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	check(err)
-
-	in := string(body)
-
-	r := csv.NewReader(strings.NewReader(in))
-	r.LazyQuotes = true
-	r.Comma = ','
-	r.Comment = '#'
-
-	for {
-		record, err := r.Read()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			break
-		}
-		if record != nil && len(record) > 0 {
-			rows := strings.Split(record[0], ";")
-			if len(rows) > 1 {
-				ipl := strings.Split(rows[0], "|")
-				for _, ip := range ipl {
-					_, mask, _ := net.ParseCIDR(ip)
-					ipp := net.ParseIP(ip)
-					if (*rules == 1 || *rules == 0) && mask != nil {
-						ips = append(ips, ip)
-					}
-					if (*rules == 2 || *rules == 0) && ipp != nil {
-						ips = append(ips, ip)
-					}
-				}
-			}
-		}
-	}
-
-	return ips
 }
 
 func in_array(val interface{}, array interface{}) (exists bool, index int) {
